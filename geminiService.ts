@@ -57,7 +57,7 @@ response: 'နားမလည်ပါဘူး။ "မုန့်ဖိုး 
 export async function getAgentAction(inputText: string, expenses: Expense[], memory: AgentMemoryItem[]): Promise<AgentAction> {
 const genAI = getGenAI();
 const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-const prompt = You are an autonomous finance assistant. Understand English and Burmese. Respond in Burmese.  Extract expense data like amount and description. User: "${inputText}" Context: ${createContext(expenses, memory)};
+const prompt = You are an autonomous finance assistant. Understand English and Burmese. Respond in Burmese.  Extract expense data like amount and description. User: "${inputText}" Context: `${createContext(expenses, memory)}`;
 
 try {
 const result = await model.generateContent(prompt);
