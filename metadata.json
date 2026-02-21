@@ -1,0 +1,5 @@
+{
+  "name": "SmartTrack AI Expense Tracker",
+  "description": "A lightweight, AI-powered expense tracker that extracts spending details from natural language sentences using Gemini.",
+  "requestFramePermissions": []
+}
