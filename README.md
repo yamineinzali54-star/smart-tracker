@@ -2,19 +2,31 @@
 <img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
 </div>
 
-# Run and deploy your AI Studio app
+# SmartTrack AI Agent
 
-This contains everything you need to run your app locally.
+This app is now structured as an **AI agent** for personal expense tracking.
 
-View your app in AI Studio: https://ai.studio/apps/a532f3f0-d655-4921-a2df-34fd34b775bd
+## Agent capabilities
 
-## Run Locally
+- **Autonomous response**: interprets user intent and responds conversationally.
+- **Task execution**: can add expense, delete latest expense, clear all, or summarize.
+- **API integration**: uses Gemini (`gemini-1.5-flash`) for action planning.
+- **Memory system**: stores short-term conversation history in localStorage.
+- **Error handling**: falls back to deterministic parsing when API output fails.
 
-**Prerequisites:**  Node.js
+## Run locally
 
+**Prerequisites:** Node.js
 
 1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+   ```bash
+   npm install
+   ```
+2. Create `.env.local` and set your key:
+   ```bash
+   VITE_GEMINI_API_KEY=your_key_here
+   ```
+3. Start app:
+   ```bash
+   npm run dev
+   ```

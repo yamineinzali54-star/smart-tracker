@@ -1,92 +1,136 @@
 import React, { useState, useEffect, useCallback } from 'react';
-// ဒီလိုင်းလေးကို framer-motion လို့ ပြောင်းထားပါတယ်
-import { motion, AnimatePresence } from 'framer-motion'; 
-import { Sparkles, Trash2, List } from 'lucide-react';
-import { Expense } from './types';
-import { extractExpenseData } from './geminiService';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Sparkles, List } from 'lucide-react';
+import { AgentMemoryItem, Expense } from './types';
+import { getAgentAction } from './geminiService';
 import ExpenseList from './components/ExpenseList';
 import Summary from './components/Summary';
 import InputArea from './components/InputArea';
+import AgentActivity from './components/AgentActivity';
+
+const MEMORY_KEY = 'smarttrack_agent_memory';
+const EXPENSES_KEY = 'smarttrack_expenses';
 
 const App: React.FC = () => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [memory, setMemory] = useState<AgentMemoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const saved = localStorage.getItem('smarttrack_expenses');
-    if (saved) {
+    const savedExpenses = localStorage.getItem(EXPENSES_KEY);
+    const savedMemory = localStorage.getItem(MEMORY_KEY);
+
+    if (savedExpenses) {
       try {
-        setExpenses(JSON.parse(saved));
+        setExpenses(JSON.parse(savedExpenses));
       } catch (e) {
-        console.error("Failed to load local storage", e);
+        console.error('Failed to load expenses', e);
+      }
+    }
+
+    if (savedMemory) {
+      try {
+        setMemory(JSON.parse(savedMemory));
+      } catch (e) {
+        console.error('Failed to load memory', e);
       }
     }
   }, []);
 
   useEffect(() => {
-    localStorage.setItem('smarttrack_expenses', JSON.stringify(expenses));
+    localStorage.setItem(EXPENSES_KEY, JSON.stringify(expenses));
   }, [expenses]);
 
-  const handleAddExpense = async (inputText: string) => {
+  useEffect(() => {
+    localStorage.setItem(MEMORY_KEY, JSON.stringify(memory));
+  }, [memory]);
+
+  const appendMemory = useCallback((role: AgentMemoryItem['role'], content: string) => {
+    setMemory((prev) => [
+      ...prev,
+      {
+        role,
+        content,
+        timestamp: new Date().toISOString(),
+      },
+    ]);
+  }, []);
+
+  const handleAgentTask = async (inputText: string) => {
     if (!inputText.trim()) return;
 
     setIsLoading(true);
     setError(null);
+    appendMemory('user', inputText);
 
     try {
-      const extracted = await extractExpenseData(inputText);
-      
-      const newExpense: Expense = {
-        ...extracted,
-        id: Date.now().toString(),
-        date: new Date().toISOString(),
-      };
+      const action = await getAgentAction(inputText, expenses, memory);
 
-      setExpenses(prev => [newExpense, ...prev]);
+      if (action.action === 'add_expense' && action.expense) {
+        const newExpense: Expense = {
+          ...action.expense,
+          id: Date.now().toString(),
+          date: new Date().toISOString(),
+        };
+        setExpenses((prev) => [newExpense, ...prev]);
+      }
+
+      if (action.action === 'delete_last_expense') {
+        setExpenses((prev) => prev.slice(1));
+      }
+
+      if (action.action === 'clear_all_expenses') {
+        setExpenses([]);
+      }
+
+      if (action.action === 'summarize') {
+        const total = expenses.reduce((sum, item) => sum + item.amount, 0);
+        const summary = `${action.response} Current total: ${total.toLocaleString()} across ${expenses.length} items.`;
+        appendMemory('agent', summary);
+        return;
+      }
+
+      appendMemory('agent', action.response);
     } catch (err: any) {
-      setError(err.message || "An error occurred");
+      setError(err.message || 'An unexpected error occurred while running the task.');
+      appendMemory('agent', 'I hit an error while processing your request. Please retry with a simpler instruction.');
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleDeleteExpense = useCallback((id: string) => {
-    setExpenses(prev => prev.filter(e => e.id !== id));
+    setExpenses((prev) => prev.filter((e) => e.id !== id));
   }, []);
 
   const handleClearAll = () => {
-    if (window.confirm("Are you sure you want to clear all expenses?")) {
+    if (window.confirm('Are you sure you want to clear all expenses?')) {
       setExpenses([]);
+      appendMemory('agent', 'All expenses were cleared by user confirmation.');
     }
   };
 
   return (
     <div className="min-h-screen bg-[#F8F9FA] flex flex-col items-center py-12 px-4 sm:px-6 lg:px-8">
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="max-w-2xl w-full space-y-8"
-      >
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="max-w-2xl w-full space-y-8">
         <div className="text-center space-y-2">
           <div className="inline-flex items-center justify-center p-2 bg-indigo-50 rounded-2xl mb-2">
             <Sparkles className="w-6 h-6 text-indigo-600" />
           </div>
           <h1 className="text-4xl font-bold text-gray-900 tracking-tight sm:text-5xl">
-            SmartTrack <span className="text-indigo-600">AI</span>
+            SmartTrack <span className="text-indigo-600">AI Agent</span>
           </h1>
-          <p className="text-gray-500 font-medium">
-            Natural language expense tracking.
-          </p>
+          <p className="text-gray-500 font-medium">Autonomous task execution for expense tracking.</p>
         </div>
 
         <Summary expenses={expenses} onClear={handleClearAll} />
 
         <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
-          <InputArea onAdd={handleAddExpense} isLoading={isLoading} />
+          <InputArea onAdd={handleAgentTask} isLoading={isLoading} />
           <AnimatePresence>
             {error && (
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
@@ -97,6 +141,8 @@ const App: React.FC = () => {
             )}
           </AnimatePresence>
         </div>
+
+        <AgentActivity memory={memory} />
 
         <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="px-6 py-5 border-b border-gray-50 flex justify-between items-center">
@@ -113,7 +159,7 @@ const App: React.FC = () => {
       </motion.div>
 
       <footer className="mt-16 text-center text-gray-400 text-[10px] uppercase tracking-[0.2em] font-medium">
-        &copy; {new Date().getFullYear()} SmartTrack AI • Crafted for Clarity
+        &copy; {new Date().getFullYear()} SmartTrack AI • Agent Mode Enabled
       </footer>
     </div>
   );

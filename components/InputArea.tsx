@@ -23,14 +23,14 @@ const InputArea: React.FC<InputAreaProps> = ({ onAdd, isLoading }) => {
     <form onSubmit={handleSubmit} className="relative">
       <div className="flex flex-col gap-3">
         <label htmlFor="expense-input" className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">
-          Quick Entry
+          Agent Command
         </label>
         <div className="relative group">
           <input
             id="expense-input"
             type="text"
             className="w-full bg-gray-50 border border-gray-100 rounded-2xl py-4 pl-5 pr-16 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all placeholder:text-gray-300 text-sm font-medium"
-            placeholder="e.g., I spent 5000 kyats on lunch today..."
+            placeholder="e.g., Add 5000 MMK for lunch, show summary, or delete last expense"
             value={text}
             onChange={(e) => setText(e.target.value)}
             disabled={isLoading}
@@ -55,7 +55,7 @@ const InputArea: React.FC<InputAreaProps> = ({ onAdd, isLoading }) => {
       <div className="mt-4 flex items-center justify-center gap-2">
         <div className="h-[1px] flex-1 bg-gray-50"></div>
         <p className="text-[10px] text-gray-300 font-bold uppercase tracking-widest">
-          AI Powered Extraction
+          Autonomous Agent Execution
         </p>
         <div className="h-[1px] flex-1 bg-gray-50"></div>
       </div>
