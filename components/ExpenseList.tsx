@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer/react';
 import { Trash2, Receipt, Calendar } from 'lucide-react';
 import { Expense } from '../types';
 
