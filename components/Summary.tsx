@@ -1,6 +1,6 @@
 
 import React, { useMemo } from 'react';
-import { motion } from 'motion/react';
+import { motion } from 'framer/react';
 import { Wallet, TrendingUp, RefreshCcw } from 'lucide-react';
 import { Expense } from '../types';
 
