@@ -1,6 +1,6 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+// ဒီလိုင်းလေးကို framer-motion လို့ ပြောင်းထားပါတယ်
+import { motion, AnimatePresence } from 'framer-motion'; 
 import { Sparkles, Trash2, List } from 'lucide-react';
 import { Expense } from './types';
 import { extractExpenseData } from './geminiService';
@@ -13,7 +13,6 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Load from local storage on mount
   useEffect(() => {
     const saved = localStorage.getItem('smarttrack_expenses');
     if (saved) {
@@ -25,7 +24,6 @@ const App: React.FC = () => {
     }
   }, []);
 
-  // Save to local storage whenever expenses change
   useEffect(() => {
     localStorage.setItem('smarttrack_expenses', JSON.stringify(expenses));
   }, [expenses]);
@@ -70,7 +68,6 @@ const App: React.FC = () => {
         animate={{ opacity: 1, y: 0 }}
         className="max-w-2xl w-full space-y-8"
       >
-        {/* Header */}
         <div className="text-center space-y-2">
           <div className="inline-flex items-center justify-center p-2 bg-indigo-50 rounded-2xl mb-2">
             <Sparkles className="w-6 h-6 text-indigo-600" />
@@ -83,10 +80,8 @@ const App: React.FC = () => {
           </p>
         </div>
 
-        {/* Summary Dashboard */}
         <Summary expenses={expenses} onClear={handleClearAll} />
 
-        {/* Input Area */}
         <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
           <InputArea onAdd={handleAddExpense} isLoading={isLoading} />
           <AnimatePresence>
@@ -103,7 +98,6 @@ const App: React.FC = () => {
           </AnimatePresence>
         </div>
 
-        {/* Expenses List */}
         <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="px-6 py-5 border-b border-gray-50 flex justify-between items-center">
             <div className="flex items-center gap-2">
