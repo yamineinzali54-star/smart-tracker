@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { motion } from 'motion/react';
+import { motion } from 'framer/react';
 import { Plus, Loader2 } from 'lucide-react';
 
 interface InputAreaProps {
