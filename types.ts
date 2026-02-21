@@ -1,4 +1,3 @@
-
 export interface Expense {
   id: string;
   amount: number;
@@ -13,4 +12,23 @@ export interface AIResponse {
   currency: string;
   category: string;
   description: string;
+}
+
+export interface AgentMemoryItem {
+  role: 'user' | 'agent';
+  content: string;
+  timestamp: string;
+}
+
+export type AgentActionType =
+  | 'add_expense'
+  | 'delete_last_expense'
+  | 'clear_all_expenses'
+  | 'summarize'
+  | 'noop';
+
+export interface AgentAction {
+  action: AgentActionType;
+  response: string;
+  expense?: AIResponse;
 }
