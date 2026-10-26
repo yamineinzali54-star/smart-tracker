@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, List } from 'lucide-react';
 import { AgentMemoryItem, Expense } from './types';
@@ -16,6 +16,8 @@ const App: React.FC = () => {
   const [memory, setMemory] = useState<AgentMemoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const isProcessingRef = useRef(false);
+  const hasLoadedStorageRef = useRef(false);
 
   useEffect(() => {
     const savedExpenses = localStorage.getItem(EXPENSES_KEY);
@@ -36,13 +38,18 @@ const App: React.FC = () => {
         console.error('Failed to load memory', e);
       }
     }
+
+    // Do not save the initial empty state before saved data has been loaded.
+    hasLoadedStorageRef.current = true;
   }, []);
 
   useEffect(() => {
+    if (!hasLoadedStorageRef.current) return;
     localStorage.setItem(EXPENSES_KEY, JSON.stringify(expenses));
   }, [expenses]);
 
   useEffect(() => {
+    if (!hasLoadedStorageRef.current) return;
     localStorage.setItem(MEMORY_KEY, JSON.stringify(memory));
   }, [memory]);
 
@@ -58,8 +65,10 @@ const App: React.FC = () => {
   }, []);
 
   const handleAgentTask = async (inputText: string) => {
-    if (!inputText.trim()) return;
+    if (!inputText.trim() || isProcessingRef.current) return;
 
+    // Block repeated submits before React has time to update the loading state.
+    isProcessingRef.current = true;
     setIsLoading(true);
     setError(null);
     appendMemory('user', inputText);
@@ -70,15 +79,14 @@ const App: React.FC = () => {
       if (action.action === 'add_expense') {
         // Support both single expense and array of expenses
         if (Array.isArray(action.expenses) && action.expenses.length > 0) {
-          // Add every expense in the array as a separate transaction
-          action.expenses.forEach((exp) => {
-            const newExpense: Expense = {
-              ...exp,
-              id: Date.now().toString() + Math.random().toString(36).substr(2),
-              date: new Date().toISOString(),
-            };
-            setExpenses((prev) => [newExpense, ...prev]);
-          });
+          // Add the returned batch in one state update to avoid stale-state races.
+          const createdAt = new Date().toISOString();
+          const newExpenses: Expense[] = action.expenses.map((exp, index) => ({
+            ...exp,
+            id: `${Date.now()}-${index}-${Math.random().toString(36).slice(2)}`,
+            date: createdAt,
+          }));
+          setExpenses((prev) => [...newExpenses.reverse(), ...prev]);
         } else if (action.action === 'add_expense' && action.expense) {
           // Original single-expense behavior (backward compatible)
           const newExpense: Expense = {
@@ -110,6 +118,7 @@ const App: React.FC = () => {
       setError(err.message || 'An unexpected error occurred while running the task.');
       appendMemory('agent', 'I hit an error while processing your request. Please retry with a simpler instruction.');
     } finally {
+      isProcessingRef.current = false;
       setIsLoading(false);
     }
   };
