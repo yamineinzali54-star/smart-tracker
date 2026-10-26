@@ -17,7 +17,7 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const isProcessingRef = useRef(false);
-  const hasLoadedStorageRef = useRef(false);
+  const [isStorageLoaded, setIsStorageLoaded] = useState(false);
 
   useEffect(() => {
     const savedExpenses = localStorage.getItem(EXPENSES_KEY);
@@ -40,18 +40,18 @@ const App: React.FC = () => {
     }
 
     // Do not save the initial empty state before saved data has been loaded.
-    hasLoadedStorageRef.current = true;
+    setIsStorageLoaded(true);
   }, []);
 
   useEffect(() => {
-    if (!hasLoadedStorageRef.current) return;
+    if (!isStorageLoaded) return;
     localStorage.setItem(EXPENSES_KEY, JSON.stringify(expenses));
-  }, [expenses]);
+  }, [expenses, isStorageLoaded]);
 
   useEffect(() => {
-    if (!hasLoadedStorageRef.current) return;
+    if (!isStorageLoaded) return;
     localStorage.setItem(MEMORY_KEY, JSON.stringify(memory));
-  }, [memory]);
+  }, [memory, isStorageLoaded]);
 
   const appendMemory = useCallback((role: AgentMemoryItem['role'], content: string) => {
     setMemory((prev) => [
