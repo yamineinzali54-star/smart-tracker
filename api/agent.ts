@@ -36,7 +36,11 @@ function fallbackAction(inputText: string) {
       amount: Number(match[2].replace(/,/g, "")),
       currency: (match[3] || "MMK").toUpperCase(),
       category: "general",
-      description: match[1].trim().replace(/\b(?:and|add|both expenses separately)\b/gi, "").trim(),
+      description: match[1]
+        .trim()
+        .replace(/^(?:(?:i\s+)?(?:bought|had|paid for|spent on)\s+)/i, "")
+        .replace(/\b(?:and|add|both expenses separately)\b/gi, "")
+        .trim(),
     }))
     .filter((expense) => Number.isFinite(expense.amount) && expense.amount > 0 && expense.description.length > 0);
 
