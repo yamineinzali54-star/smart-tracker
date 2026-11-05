@@ -8,12 +8,32 @@ const currentDir = path.dirname(currentFile);
 dotenv.config({
     path: path.resolve(currentDir, "../.env"),
 });
+
 import express, { Request, Response } from "express";
 import OpenAI from "openai";
+import cors from "cors";
+import { createClient } from "@supabase/supabase-js";
+
+const app = express();
+app.use(express.json());
+
+// CORS configuration for Vercel frontend and localhost development
+const whitelist = ['https://smart-tracker-6d35.vercel.app', 'http://localhost:3000'];
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin) callback(null, true);
+    if (whitelist.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(null, false);
+    }
+  }
+}));
 
 // Type definitions inline (same as frontend types.ts)
 interface Expense {
     id: string;
+    user_id: string;
     amount: number;
     currency: string;
     category: string;
@@ -36,9 +56,14 @@ interface AgentAction {
         category: string;
         description: string;
     };
+    expenses?: {
+        amount: number;
+        currency: string;
+        category: string;
+        description: string;
+    }[];
 }
 
-// Type for the request body
 interface AgentRequestBody {
     inputText: string;
     expenses: Expense[];
@@ -50,6 +75,7 @@ interface AgentResponse {
     action: AgentAction["action"];
     response: string;
     expense?: AgentAction["expense"];
+    expenses?: AgentAction["expenses"];
 }
 
 // LLM setup (OpenRouter / OpenAI-compatible)
@@ -66,9 +92,17 @@ if (!apiKey) {
 // Initialize the OpenAI-compatible client for OpenRouter
 const openai = new OpenAI({ apiKey, baseURL });
 
-// Express app
-const app = express();
-app.use(express.json());
+// Initialize Supabase admin client with service role key for JWT verification and DB operations
+const supabase = createClient(
+    process.env.SUPABASE_URL || "",
+    process.env.SUPABASE_SERVICE_ROLE_KEY || "",
+    {
+        auth: {
+            autoRefreshToken: false,
+            persistSession: false,
+        },
+    }
+);
 
 // Helper: create the same context as the frontend
 function createContext(expenses: Expense[], memory: AgentMemoryItem[]) {
@@ -130,14 +164,45 @@ function fallbackAction(inputText: string) {
     };
 }
 
-// POST /api/agent endpoint
-app.post("/api/agent", async (req: Request, res: Response) => {
+// Middleware: verify Supabase JWT from Authorization header
+async function verifyAuth(req: Request, res: Response, next: express.NextFunction) {
+    try {
+        const authHeader = req.headers.authorization;
+
+        if (!authHeader || !authHeader.startsWith("Bearer ")) {
+            res.status(401).json({ error: "Missing or invalid Authorization header" });
+            return;
+        }
+
+        const token = authHeader.split(" ")[1];
+
+        // Verify the JWT using the Supabase JWT payload
+        const { data: payload, error } = await supabase.auth.getUser(token);
+
+        if (error || !payload.user) {
+            res.status(401).json({ error: "Invalid or expired token" });
+            return;
+        }
+
+        // Attach user ID to request for use in endpoint handlers
+        (req as any).user = payload.user;
+        next();
+    } catch (error) {
+        console.error("Auth verification error:", error);
+        res.status(500).json({ error: "Internal authentication error" });
+    }
+}
+
+// POST /api/agent endpoint with authentication
+app.post("/api/agent", verifyAuth, async (req: Request, res: Response) => {
     try {
         const { inputText, expenses, memory } = req.body as {
             inputText: string;
             expenses: Expense[];
             memory: AgentMemoryItem[];
         };
+
+        const userId = (req as any).user.id;
 
         if (!inputText) {
             res.status(400).json({ error: "inputText is required" });
@@ -182,7 +247,6 @@ Output schema:
 "expenses"?: {"amount": number, "description": string, "category": string, "currency": string}[}
 `;
 
-        // Call OpenAI-compatible API via OpenRouter
         let parsed: { action: string; response: string; expense?: { amount: number; currency: string; category: string; description: string } } | null = null;
         let llmSource = "fallback";
 
@@ -211,19 +275,19 @@ Output schema:
 
             // Support multiple expenses: check for expenses array first, then fall back to single expense
             let expenseList: { amount: number; currency: string; category: string; description: string }[] = [];
-            if (Array.isArray(parsed!.expenses)) {
+            if ((parsed as any).expenses && Array.isArray((parsed as any).expenses)) {
                 // New format: expenses is an array
-                expenseList = parsed!.expenses.filter(
+                expenseList = ((parsed as any).expenses as any[]).filter(
                     (e): e is { amount: number; currency: string; category: string; description: string } =>
                         typeof e.amount === 'number' && e.currency && e.category && e.description
                 );
-            } else if (parsed!.expense) {
+            } else if ((parsed as any).expense) {
                 // Backward-compatible format: single expense object
-                expenseList = [parsed!.expense];
+                expenseList = [{ amount: (parsed as any).expense.amount, currency: (parsed as any).expense.currency, category: (parsed as any).expense.category, description: (parsed as any).expense.description }];
             }
 
             // Send one response with both expense (first) and expenses (array)
-            res.json({ success: true, action: parsed!.action, response: parsed!.response, expense: expenseList.length > 0 ? expenseList[0] : undefined, expenses: expenseList.length > 0 ? expenseList : undefined, source: llmSource });
+            res.json({ success: true, action: parsed!.action, response: parsed!.response, expense: expenseList.length > 0 ? expenseList[0] : undefined, expenses: expenseList.length > 0 ? expenseList : undefined, source: llmSource, userId });
         } catch (error) {
             console.error("/api/agent error:", error instanceof Error ? error.message : String(error));
             // Fallback on API error
@@ -239,7 +303,7 @@ Output schema:
     }
 });
 
-// Health check endpoint
+// Health check endpoint (no auth required)
 app.get("/api/health", (_req: Request, res: Response) => {
     res.json({ status: "ok", hasApiKey: !!apiKey });
 });

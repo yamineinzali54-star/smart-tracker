@@ -30,4 +30,6 @@ backend/.env
 !.env.example
 backend/.env
 backend/.env.*
-!backend/.env.example
+
+# Generated/Build files
+backend/tsconfig.tsbuildinfo

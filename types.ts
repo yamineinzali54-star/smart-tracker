@@ -1,5 +1,6 @@
 export interface Expense {
   id: string;
+  user_id: string;
   amount: number;
   currency: string;
   category: string;
@@ -31,4 +32,5 @@ export interface AgentAction {
   action: AgentActionType;
   response: string;
   expense?: AIResponse;
+  expenses?: AIResponse[];
 }

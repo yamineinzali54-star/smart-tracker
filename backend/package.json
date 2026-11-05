@@ -2,13 +2,17 @@
   "name": "smarttrack-backend",
   "version": "1.0.0",
   "type": "module",
-  "main": "server.ts",
+  "main": "dist/server.js",
   "scripts": {
-    "dev": "tsx server.ts",
+    "dev": "tsx src/server.ts",
     "build": "tsc --build",
     "start": "node dist/server.js"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.118.0",
+    "cors": "^2.8.6",
+    "dotenv": "^18.0.9",
+    "express": "^4.19.2",
     "openai": "^7.43.0"
   },
   "devDependencies": {

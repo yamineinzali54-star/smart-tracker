@@ -1,5 +1,5 @@
-
-import { AgentAction, AgentMemoryItem, Expense } from "./types";
+import { AgentAction, AgentActionType, AgentMemoryItem, Expense } from "./types";
+import { supabase } from "./lib/supabase";
 
 type AgentExpense = {
     amount: number;
@@ -35,34 +35,62 @@ function isValidExpense(value: unknown): value is AgentExpense {
     );
 }
 
+// Helper: single fetch call — eliminates duplicated body code
+async function callAgentApi(
+    token: string,
+    inputText: string,
+    expenses: Expense[],
+    memory: AgentMemoryItem[],
+    baseURL: string
+) {
+    return fetch(baseURL + "/api/agent", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ inputText, expenses, memory }),
+    });
+}
+
 export async function getAgentAction(
     inputText: string,
     expenses: Expense[],
     memory: AgentMemoryItem[]
 ): Promise<AgentAction> {
     try {
-        const response = await fetch("/api/agent", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-                inputText,
-                expenses,
-                memory,
-            }),
-        });
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+
+        if (sessionError || !session) {
+            throw new Error("Not authenticated. Please log in.");
+        }
+
+        // Determine API base URL: use VITE_API_BASE_URL if set, otherwise "" (Vite proxy handles /api)
+        const baseURL = import.meta.env.VITE_API_BASE_URL || "";
+
+        let response = await callAgentApi(session.access_token, inputText, expenses, memory, baseURL);
+
+        if (response.status === 401) {
+            const { data: { session: refreshed }, error: refreshError } = await supabase.auth.refreshSession();
+
+            if (refreshError || !refreshed) {
+                throw new Error("Session expired. Please log in again.");
+            }
+
+            response = await callAgentApi(refreshed.access_token, inputText, expenses, memory, baseURL);
+
+            if (response.status === 401) {
+                throw new Error("Session expired. Please log in again.");
+            }
+        }
 
         if (!response.ok) {
-            console.error(
-                "Agent API request failed:",
-                response.status,
-                response.statusText
-            );
-
+            console.error("Agent API request failed:", response.status, response.statusText);
             return fallbackAction(inputText);
         }
 
+        // ↓ THIS IS THE ONLY place that processes the response now —
+        //    the original "process response data" logic placed unchanged here.
         const data: AgentApiResponse = await response.json();
 
         // Check the response from the backend during testing.
@@ -74,6 +102,7 @@ export async function getAgentAction(
             typeof data.response !== "string"
         ) {
             console.error("Invalid Agent API response:", data);
+
             return fallbackAction(inputText);
         }
 
@@ -94,13 +123,14 @@ export async function getAgentAction(
             : expensesArray[0];
 
         return {
-            action: data.action,
+            action: data.action as AgentActionType,
             response: data.response,
             ...(primaryExpense ? { expense: primaryExpense } : {}),
             expenses: expensesArray,
         };
     } catch (error) {
         console.error("getAgentAction fetch error:", error);
+
         return fallbackAction(inputText);
     }
 }
