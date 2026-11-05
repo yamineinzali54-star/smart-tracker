@@ -22,7 +22,7 @@ const whitelist = ['https://smart-tracker-6d35.vercel.app', 'http://localhost:30
 app.use(cors({
   origin: function (origin, callback) {
     if (!origin) callback(null, true);
-    if (whitelist.indexOf(origin) !== -1) {
+    else if (whitelist.indexOf(origin as string) !== -1) {
       callback(null, true);
     } else {
       callback(null, false);
