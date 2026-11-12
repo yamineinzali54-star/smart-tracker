@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { motion } from 'framer-motion'
-import { ArrowRight, Eye, EyeOff, Loader as Loader2, Lock, Mail, Sparkles, UserRound } from 'lucide-react'
+import { ArrowRight, Bot, Clock, Eye, EyeOff, Loader as Loader2, Lock, Mail, Shield, Sparkles, UserRound } from 'lucide-react'
 import { useAuth } from '../auth-context'
 
 const AuthPage: React.FC = () => {
@@ -42,22 +42,72 @@ const AuthPage: React.FC = () => {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-4 py-12 sm:px-6">
+    <div className="grid min-h-screen bg-slate-50 lg:grid-cols-[1.1fr_1fr]">
+      <aside className="relative hidden overflow-hidden bg-gradient-to-br from-primary-600 via-primary-700 to-primary-900 p-12 text-white lg:flex lg:flex-col lg:justify-between">
+        <div className="pointer-events-none absolute -right-24 -top-24 h-96 w-96 rounded-full bg-white/5" />
+        <div className="pointer-events-none absolute -bottom-32 -left-16 h-80 w-80 rounded-full bg-white/5" />
+
+        <div className="relative flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/15 ring-1 ring-white/20 backdrop-blur">
+            <Sparkles className="h-5 w-5" />
+          </div>
+          <span className="text-base font-semibold tracking-tight">SmartTrack AI</span>
+        </div>
+
+        <div className="relative max-w-md">
+          <h2 className="text-4xl font-semibold leading-[1.15] tracking-tight">
+            Track every expense by simply telling your agent.
+          </h2>
+          <ul className="mt-10 space-y-5">
+            <li className="flex items-start gap-3">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/15">
+                <Bot className="h-4 w-4" />
+              </span>
+              <div>
+                <p className="text-sm font-semibold">Log in plain language</p>
+                <p className="mt-0.5 text-sm text-primary-100">Type what you spent and the agent records it.</p>
+              </div>
+            </li>
+            <li className="flex items-start gap-3">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/15">
+                <Clock className="h-4 w-4" />
+              </span>
+              <div>
+                <p className="text-sm font-semibold">Understands English and Burmese dates</p>
+                <p className="mt-0.5 text-sm text-primary-100">Relative days are parsed in both languages.</p>
+              </div>
+            </li>
+            <li className="flex items-start gap-3">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/15">
+                <Shield className="h-4 w-4" />
+              </span>
+              <div>
+                <p className="text-sm font-semibold">Private to your account</p>
+                <p className="mt-0.5 text-sm text-primary-100">Your expenses and agent history stay yours.</p>
+              </div>
+            </li>
+          </ul>
+        </div>
+
+        <p className="relative text-xs text-primary-200">Autonomous expense tracking</p>
+      </aside>
+
+      <div className="flex items-center justify-center px-4 py-12 sm:px-6">
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
         className="w-full max-w-md"
       >
-        <div className="mb-8 flex flex-col items-center text-center">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-600 text-white shadow-lg shadow-primary-600/25">
+        <div className="mb-8 flex flex-col items-center text-center lg:hidden">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-primary-500 to-primary-700 text-white shadow-lg shadow-primary-600/25">
             <Sparkles className="h-5 w-5" />
           </div>
           <h1 className="mt-4 text-2xl font-semibold tracking-tight text-slate-900">SmartTrack AI</h1>
           <p className="mt-1 text-sm text-slate-500">Your autonomous expense tracking agent</p>
         </div>
 
-        <div className="card p-6 sm:p-8">
+        <div className="card p-6 shadow-[0_12px_40px_-12px_rgb(15_23_42/0.12)] sm:p-8">
           <div className="mb-6 grid grid-cols-2 gap-1 rounded-xl bg-slate-100 p-1">
             <button
               type="button"
@@ -175,6 +225,7 @@ const AuthPage: React.FC = () => {
           Your expenses and agent history stay private to your account.
         </p>
       </motion.div>
+      </div>
     </div>
   )
 }

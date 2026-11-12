@@ -27,17 +27,38 @@
   --color-error-500: #f43f5e;
   --color-error-600: #e11d48;
   --color-error-700: #be123c;
+
+  --animate-fade-in-up: fade-in-up 0.3s ease-out;
+
+  @keyframes fade-in-up {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
 }
 
 @layer base {
   body {
     @apply bg-slate-50 text-slate-900 antialiased;
   }
+
+  :focus-visible {
+    @apply outline-none ring-2 ring-primary-500/60 ring-offset-2 ring-offset-white;
+  }
 }
 
 @layer components {
   .card {
-    @apply rounded-2xl border border-slate-200/80 bg-white shadow-sm;
+    @apply rounded-2xl border border-slate-200/70 bg-white shadow-[0_1px_2px_rgb(15_23_42/0.04),0_1px_3px_rgb(15_23_42/0.06)];
+  }
+
+  .card-interactive {
+    @apply transition duration-200 ease-out hover:-translate-y-0.5 hover:border-slate-300/80 hover:shadow-[0_8px_24px_-8px_rgb(15_23_42/0.12)];
   }
 
   .input-field {
