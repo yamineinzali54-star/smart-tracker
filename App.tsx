@@ -68,7 +68,7 @@ const App: React.FC = () => {
             currency: exp.currency,
             category: exp.category,
             description: exp.description,
-            date: new Date().toISOString(),
+            date: resolveExpenseDate(exp.date) || getLocalDateString(),
           }
           setExpenses((prev) => [newExpense, ...prev])
           saveExpToSupabase(newExpense)
@@ -227,6 +227,66 @@ const App: React.FC = () => {
       </motion.div>
     </div>
   )
+}
+
+function getLocalDateString(): string {
+  return new Date().toISOString().split('T')[0];
+}
+
+function resolveExpenseDate(dateParam: string | undefined): string {
+  // If already an ISO date string (YYYY-MM-DD), use as-is
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateParam)) {
+    return dateParam;
+  }
+  
+  // Relative dates in English
+  const lower = (dateParam || '').toLowerCase();
+  if (lower === "yesterday" || lower === "last day") {
+    const d = new Date();
+    d.setDate(d.getDate() - 1);
+    return d.toISOString().split('T')[0];
+  }
+  if (lower === "today" || lower === "this day") {
+    return getLocalDateString();
+  }
+  if (lower === "tomorrow" || lower === "next day") {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return tomorrow.toISOString().split('T')[0];
+  }
+  
+  // Burmese relative dates (literal phrases)
+  if (dateParam === "မန doorway" || dateParam === "မနက်ဖည်") {
+    const d = new Date();
+    d.setDate(d.getDate() - 1);
+    return d.toISOString().split('T')[0];
+  }
+  if (dateParam === "ဒီနေ့" || dateParam === "today") {
+    return getLocalDateString();
+  }
+  if (dateParam === "မနက်ဖြန်" || dateParam === "လက်နေ့") {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return tomorrow.toISOString().split('T')[0];
+  }
+  
+  // Myanmar relative date tokens (as allowed by the AI prompt)
+  if (dateParam === "myanmar_yesterday") {
+    const d = new Date();
+    d.setDate(d.getDate() - 1);
+    return d.toISOString().split('T')[0];
+  }
+  if (dateParam === "myanmar_today") {
+    return getLocalDateString();
+  }
+  if (dateParam === "myanmar_tomorrow") {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return tomorrow.toISOString().split('T')[0];
+  }
+  
+  // Default to today if no recognized date
+  return getLocalDateString();
 }
 
 export default App
