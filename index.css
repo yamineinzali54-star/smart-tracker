@@ -1,3 +1,46 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+
+  --color-primary-50: #eff6ff;
+  --color-primary-100: #dbeafe;
+  --color-primary-500: #3b82f6;
+  --color-primary-600: #2563eb;
+  --color-primary-700: #1d4ed8;
+  --color-primary-900: #1e3a8a;
+
+  --color-accent-50: #ecfeff;
+  --color-accent-500: #06b6d4;
+  --color-accent-700: #0e7490;
+
+  --color-success-50: #ecfdf5;
+  --color-success-500: #10b981;
+  --color-success-700: #047857;
+
+  --color-warning-50: #fffbeb;
+  --color-warning-500: #f59e0b;
+  --color-warning-700: #b45309;
+
+  --color-error-50: #fff1f2;
+  --color-error-100: #ffe4e6;
+  --color-error-500: #f43f5e;
+  --color-error-600: #e11d48;
+  --color-error-700: #be123c;
+}
+
+@layer base {
+  body {
+    @apply bg-slate-50 text-slate-900 antialiased;
+  }
+}
+
+@layer components {
+  .card {
+    @apply rounded-2xl border border-slate-200/80 bg-white shadow-sm;
+  }
+
+  .input-field {
+    @apply h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-primary-500 focus:ring-4 focus:ring-primary-500/15 disabled:bg-slate-50 disabled:text-slate-400;
+  }
+}

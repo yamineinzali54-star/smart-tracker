@@ -1,7 +1,5 @@
-
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import { Plus, Loader2 } from 'lucide-react';
+import { Send, Loader as Loader2 } from 'lucide-react';
 
 interface InputAreaProps {
   onAdd: (text: string) => Promise<void>;
@@ -14,50 +12,39 @@ const InputArea: React.FC<InputAreaProps> = ({ onAdd, isLoading }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!text.trim() || isLoading) return;
-    
+
     await onAdd(text);
     setText('');
   };
 
   return (
-    <form onSubmit={handleSubmit} className="relative">
-      <div className="flex flex-col gap-3">
-        <label htmlFor="expense-input" className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">
-          Agent Command
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div>
+        <label htmlFor="expense-input" className="block text-base font-semibold text-slate-900">
+          Agent command
         </label>
-        <div className="relative group">
-          <input
-            id="expense-input"
-            type="text"
-            className="w-full bg-gray-50 border border-gray-100 rounded-2xl py-4 pl-5 pr-16 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all placeholder:text-gray-300 text-sm font-medium"
-            placeholder="e.g., Add 5000 MMK for lunch, show summary, or delete last expense"
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            disabled={isLoading}
-          />
-          <button
-            type="submit"
-            disabled={isLoading || !text.trim()}
-            className={`absolute right-2 top-2 bottom-2 px-4 rounded-xl font-bold transition-all flex items-center justify-center ${
-              isLoading || !text.trim()
-                ? 'bg-gray-100 text-gray-300 cursor-not-allowed'
-                : 'bg-indigo-600 text-white hover:bg-indigo-700 active:scale-95 shadow-lg shadow-indigo-200'
-            }`}
-          >
-            {isLoading ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
-            ) : (
-              <Plus className="w-5 h-5" />
-            )}
-          </button>
-        </div>
-      </div>
-      <div className="mt-4 flex items-center justify-center gap-2">
-        <div className="h-[1px] flex-1 bg-gray-50"></div>
-        <p className="text-[10px] text-gray-300 font-bold uppercase tracking-widest">
-          Autonomous Agent Execution
+        <p className="mt-1 text-sm text-slate-500">
+          Describe what you spent, or ask for a summary, an undo, or a reset.
         </p>
-        <div className="h-[1px] flex-1 bg-gray-50"></div>
+      </div>
+      <div className="flex flex-col gap-3 sm:flex-row">
+        <input
+          id="expense-input"
+          type="text"
+          className="input-field flex-1"
+          placeholder="e.g., Add 5000 MMK for lunch, show summary, or delete last expense"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          disabled={isLoading}
+        />
+        <button
+          type="submit"
+          disabled={isLoading || !text.trim()}
+          className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-primary-600 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500 disabled:shadow-none"
+        >
+          {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+          {isLoading ? 'Working...' : 'Run'}
+        </button>
       </div>
     </form>
   );

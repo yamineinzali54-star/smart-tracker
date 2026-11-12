@@ -1,26 +1,23 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
-import { Sparkles } from 'lucide-react'
 import { Expense } from './types'
 import { getAgentAction } from './geminiService'
-import { useAuth, supabase } from './auth-context' // AuthProvider ကို ဒီကနေ ဖြုတ်ထားပါတယ်
+import { useAuth, supabase } from './auth-context'
 import ExpenseList from './components/ExpenseList'
 import Summary from './components/Summary'
 import InputArea from './components/InputArea'
 import AgentActivity from './components/AgentActivity'
+import AuthPage from './components/AuthPage'
+import Sidebar from './components/Sidebar'
+import TopBar from './components/TopBar'
 
 const App: React.FC = () => {
-  const { user, loading, signIn, signUp, signOut } = useAuth()
+  const { user, loading, signOut } = useAuth()
   const [expenses, setExpenses] = useState<Expense[]>([])
   const [memory, setMemory] = useState<Array<{ role: 'user' | 'agent'; content: string; timestamp: string }>>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-
-  // Login Form အတွက် အသစ်ထည့်ထားတဲ့ State များ
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [isSignUp, setIsSignUp] = useState(false)
-  const [authError, setAuthError] = useState<string | null>(null)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
 
   useEffect(() => {
     if (user) {
@@ -134,97 +131,59 @@ const App: React.FC = () => {
     }
   }
 
-  const handleAuthSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setAuthError(null)
-    try {
-      if (isSignUp) {
-        await signUp(email, password, 'User')
-      } else {
-        await signIn(email, password)
-      }
-    } catch (err: any) {
-      setAuthError(err.message || 'Authentication failed. Please check your credentials.')
-    }
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center text-sm font-medium text-slate-500">
+        Loading...
+      </div>
+    )
   }
 
-  if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">Loading...</div>
-  }
+  if (!user) return <AuthPage />
 
   return (
-    <div className="min-h-screen bg-[#F8F9FA] flex flex-col items-center py-12 px-4 sm:px-6 lg:px-8">
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="max-w-2xl w-full space-y-8">
-        <div className="text-center space-y-2">
-          <div className="inline-flex items-center justify-center p-2 bg-indigo-50 rounded-2xl mb-2">
-            <Sparkles className="w-6 h-6 text-indigo-600" />
-          </div>
-          <h1 className="text-4xl font-bold text-gray-900 tracking-tight sm:text-5xl">
-            SmartTrack <span className="text-indigo-600">AI Agent</span>
-          </h1>
-          <p className="text-gray-500 font-medium">Autonomous task execution for expense tracking.</p>
-        </div>
+    <div className="min-h-screen bg-slate-50">
+      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-        <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
-          {/* ဒီနေရာမှာ AuthProvider ကို ဖြုတ်လိုက်ပါပြီ */}
-          {user ? (
-            <div>
-              <div className="flex justify-end mb-4">
-                 <button onClick={signOut} className="text-sm font-medium text-red-500 hover:text-red-700">Sign Out</button>
-              </div>
-              <Summary expenses={expenses} onClear={handleClearAll} />
-              <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
-                <InputArea onAdd={handleAgentTask} isLoading={isLoading} />
-                <AgentActivity memory={memory} />
-                <ExpenseList expenses={expenses} onDelete={handleDeleteExpense} />
-              </div>
-            </div>
-          ) : (
-            <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
-              <div className="text-center space-y-4">
-                <h2 className="text-xl font-bold text-gray-900">{isSignUp ? 'Create an Account' : 'Welcome Back'}</h2>
-                <p className="text-gray-500">Sign in to track your expenses.</p>
+      <div className="lg:pl-64">
+        <TopBar
+          onMenuClick={() => setSidebarOpen(true)}
+          userName={user.user_metadata?.name || 'User'}
+          userEmail={user.email ?? ''}
+          onSignOut={signOut}
+        />
 
-                {authError && <div className="text-red-500 text-sm bg-red-50 p-2 rounded">{authError}</div>}
+        <motion.main
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35 }}
+          className="mx-auto w-full max-w-6xl space-y-6 px-4 py-6 sm:px-6 lg:px-8 lg:py-8"
+        >
+          <section id="overview" className="scroll-mt-24">
+            <Summary expenses={expenses} onClear={handleClearAll} />
+          </section>
 
-                {/* တကယ့် Login Form လေး ဖြစ်သွားပါပြီ */}
-                <form onSubmit={handleAuthSubmit} className="flex flex-col gap-3 max-w-sm mx-auto mt-4">
-                  <input
-                    type="email"
-                    placeholder="Email address"
-                    value={email}
-                    onChange={e => setEmail(e.target.value)}
-                    required
-                    className="border border-gray-300 p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
-                  <input
-                    type="password"
-                    placeholder="Password"
-                    value={password}
-                    onChange={e => setPassword(e.target.value)}
-                    required
-                    className="border border-gray-300 p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
-                  <button type="submit" className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition-colors">
-                    {isSignUp ? 'Sign Up' : 'Sign In'}
-                  </button>
-                </form>
-
-                <div className="text-sm text-gray-500 mt-4">
-                  {isSignUp ? 'Already have an account? ' : "Don't have an account? "}
-                  <button type="button" onClick={() => setIsSignUp(!isSignUp)} className="text-indigo-600 font-medium hover:underline">
-                    {isSignUp ? 'Sign In' : 'Sign Up'}
-                  </button>
+          <div className="grid gap-6 xl:grid-cols-3">
+            <section id="agent" className="card scroll-mt-24 p-5 sm:p-6 xl:col-span-2">
+              <InputArea onAdd={handleAgentTask} isLoading={isLoading} />
+              {error && (
+                <div role="alert" className="mt-4 rounded-xl border border-error-100 bg-error-50 px-4 py-3 text-sm text-error-700">
+                  {error}
                 </div>
-              </div>
-            </div>
-          )}
-        </div>
+              )}
+            </section>
+            <AgentActivity memory={memory} />
+          </div>
 
-        <footer className="mt-16 text-center text-gray-400 text-[10px] uppercase tracking-[0.2em] font-medium">
-          &copy; {new Date().getFullYear()} SmartTrack AI • Agent Mode Enabled
-        </footer>
-      </motion.div>
+          <section id="transactions" className="scroll-mt-24">
+            <ExpenseList expenses={expenses} onDelete={handleDeleteExpense} />
+          </section>
+
+          <footer className="pb-4 pt-2 text-center text-[11px] font-medium uppercase tracking-[0.2em] text-slate-400">
+            &copy; {new Date().getFullYear()} SmartTrack AI
+          </footer>
+        </motion.main>
+      </div>
     </div>
   )
 }
