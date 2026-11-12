@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Wallet, Receipt, Tag, Clock, RefreshCcw, Video as LucideIcon } from 'lucide-react';
+import { Wallet, Receipt, Tag, Clock, RefreshCcw } from 'lucide-react';
 import { Expense } from '../types';
 
 interface SummaryProps {
@@ -8,7 +8,7 @@ interface SummaryProps {
 }
 
 interface StatCardProps {
-  icon: LucideIcon;
+  icon: React.ComponentType<{ className?: string }>;
   label: string;
   action?: React.ReactNode;
   children: React.ReactNode;

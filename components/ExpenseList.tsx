@@ -3,6 +3,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Trash2, Receipt, Calendar } from 'lucide-react';
 import { Expense } from '../types';
 
+const formatExpenseDate = (date: string) => {
+  const [year, month, day] = date.split('-').map(Number);
+  return new Date(year, month - 1, day).toLocaleDateString([], { month: 'short', day: 'numeric' });
+};
+
 interface ExpenseListProps {
   expenses: Expense[];
   onDelete: (id: string) => void;
@@ -56,7 +61,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, onDelete }) => {
                         <span className="truncate">{expense.category}</span>
                         <span className="flex items-center gap-1 md:hidden">
                           <Calendar className="h-3 w-3" />
-                          {new Date(expense.date).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+                          {formatExpenseDate(expense.date)}
                         </span>
                       </div>
                     </div>
@@ -64,7 +69,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, onDelete }) => {
 
                   <div className="hidden w-32 items-center gap-1.5 text-sm text-slate-500 md:flex">
                     <Calendar className="h-3.5 w-3.5" />
-                    {new Date(expense.date).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+                    {formatExpenseDate(expense.date)}
                   </div>
 
                   <div className="w-auto text-right md:w-36">

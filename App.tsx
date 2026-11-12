@@ -22,6 +22,9 @@ const App: React.FC = () => {
   useEffect(() => {
     if (user) {
       fetchSupData()
+    } else {
+      setExpenses([])
+      setMemory([])
     }
   }, [user])
 
@@ -73,11 +76,8 @@ const App: React.FC = () => {
       }
 
       if (action.action === 'delete_last_expense') {
-        const lastExpense = expenses[expenses.length - 1]
-        if (lastExpense && supabase) {
-          await supabase.from('expenses').delete().eq('id', lastExpense.id)
-        }
-        setExpenses((prev) => prev.slice(0, -1))
+        const lastExpense = expenses[0]
+        if (lastExpense) await handleDeleteExpense(lastExpense.id)
       }
 
       if (action.action === 'clear_all_expenses') {
@@ -103,7 +103,7 @@ const App: React.FC = () => {
 
   const saveExpToSupabase = async (expense: Expense) => {
     if (!supabase) return
-    await supabase.from('expenses').insert({
+    const { error: saveError } = await supabase.from('expenses').insert({
       id: expense.id,
       user_id: user?.id || '',
       amount: expense.amount,
@@ -112,12 +112,21 @@ const App: React.FC = () => {
       description: expense.description,
       date: expense.date,
     })
+    if (saveError) {
+      console.error('Error saving expense:', saveError)
+      setExpenses((prev) => prev.filter((e) => e.id !== expense.id))
+      setError('Could not save that expense. Please try again.')
+    }
   }
 
-  const handleDeleteExpense = useCallback((id: string) => {
+  const handleDeleteExpense = useCallback(async (id: string) => {
     setExpenses((prev) => prev.filter((e) => e.id !== id))
-    if (supabase) {
-      supabase.from('expenses').delete().eq('id', id)
+    if (!supabase) return
+    const { error: deleteError } = await supabase.from('expenses').delete().eq('id', id)
+    if (deleteError) {
+      console.error('Error deleting expense:', deleteError)
+      setError('Could not delete that expense. Please try again.')
+      fetchSupData()
     }
   }, [user?.id])
 
@@ -188,8 +197,15 @@ const App: React.FC = () => {
   )
 }
 
+function toLocalDateString(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 function getLocalDateString(): string {
-  return new Date().toISOString().split('T')[0];
+  return toLocalDateString(new Date());
 }
 
 function resolveExpenseDate(dateParam: string | undefined): string {
@@ -203,7 +219,7 @@ function resolveExpenseDate(dateParam: string | undefined): string {
   if (lower === "yesterday" || lower === "last day") {
     const d = new Date();
     d.setDate(d.getDate() - 1);
-    return d.toISOString().split('T')[0];
+    return toLocalDateString(d);
   }
   if (lower === "today" || lower === "this day") {
     return getLocalDateString();
@@ -211,14 +227,14 @@ function resolveExpenseDate(dateParam: string | undefined): string {
   if (lower === "tomorrow" || lower === "next day") {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
-    return tomorrow.toISOString().split('T')[0];
+    return toLocalDateString(tomorrow);
   }
   
   // Burmese relative dates (literal phrases)
   if (dateParam === "မန doorway" || dateParam === "မနက်ဖည်") {
     const d = new Date();
     d.setDate(d.getDate() - 1);
-    return d.toISOString().split('T')[0];
+    return toLocalDateString(d);
   }
   if (dateParam === "ဒီနေ့" || dateParam === "today") {
     return getLocalDateString();
@@ -226,14 +242,14 @@ function resolveExpenseDate(dateParam: string | undefined): string {
   if (dateParam === "မနက်ဖြန်" || dateParam === "လက်နေ့") {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
-    return tomorrow.toISOString().split('T')[0];
+    return toLocalDateString(tomorrow);
   }
   
   // Myanmar relative date tokens (as allowed by the AI prompt)
   if (dateParam === "myanmar_yesterday") {
     const d = new Date();
     d.setDate(d.getDate() - 1);
-    return d.toISOString().split('T')[0];
+    return toLocalDateString(d);
   }
   if (dateParam === "myanmar_today") {
     return getLocalDateString();
@@ -241,7 +257,7 @@ function resolveExpenseDate(dateParam: string | undefined): string {
   if (dateParam === "myanmar_tomorrow") {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
-    return tomorrow.toISOString().split('T')[0];
+    return toLocalDateString(tomorrow);
   }
   
   // Default to today if no recognized date
